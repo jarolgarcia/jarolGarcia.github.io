@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes - Tienda INOVA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f8f8;
+            color: #333;
+        }
+        header {
+            background-color: #ff5722;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+        .container {
+            margin: 2rem auto;
+            padding: 1rem;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .client-order {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            position: relative;
+        }
+        .client-order h3 {
+            margin: 0 0 0.5rem;
+        }
+        .remove-order-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .remove-order-btn:hover {
+            background-color: #c0392b;
+        }
+        .order-products table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .order-products table th, .order-products table td {
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+        }
+        .total-section {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+            text-align: right;
+        }
+        .grand-total {
+            font-weight: bold;
+            color: #ff5722;
+        }
+    </style>
+</head>
+<body>
+    <header>Clientes - Tienda INOVA</header>
+    <div class="container">
+        <h2>Pedidos Realizados</h2>
+        <div id="order-list">
+            <!-- Los pedidos de los clientes se cargarán aquí dinámicamente -->
+        </div>
+    </div>
+
+    <script>
+        const orders = JSON.parse(localStorage.getItem('orders')) || [];
+
+        function renderOrders() {
+            const orderListContainer = document.getElementById('order-list');
+            orderListContainer.innerHTML = '';
+
+            if (orders.length === 0) {
+                orderListContainer.innerHTML = '<p>No hay pedidos registrados.</p>';
+                return;
+            }
+
+            orders.forEach((order, index) => {
+                const orderDiv = document.createElement('div');
+                orderDiv.classList.add('client-order');
+
+                let totalByClient = 0;
+                order.products.forEach(product => {
+                    totalByClient += parseFloat(product.priceUnit) * product.quantity;
+                });
+
+                orderDiv.innerHTML = `
+                    <h3>Pedido de ${order.clientFirstName} ${order.clientLastName}</h3>
+                    <p><strong>Teléfono:</strong> ${order.clientPhone}</p>
+                    <p><strong>Correo:</strong> ${order.clientEmail}</p>
+                    <p><strong>Dirección:</strong> ${order.clientAddress}</p>
+                    <p class="total-section"><span class="grand-total">Total del Cliente: $${totalByClient.toFixed(2)}</span></p>
+                    <button class="remove-order-btn" onclick="removeOrder(${index})">Eliminar Pedido</button>
+                `;
+
+                const productsTable = document.createElement('div');
+                productsTable.classList.add('order-products');
+
+                let productRows = `<table>
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Color</th>
+                            <th>Talla</th>
+                            <th>Precio Unitario</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+                order.products.forEach(product => {
+                    const productTotal = parseFloat(product.priceUnit) * product.quantity;
+                    productRows += `
+                        <tr>
+                            <td>${product.name}</td>
+                            <td>${product.quantity}</td>
+                            <td>${product.color}</td>
+                            <td>${product.size}</td>
+                            <td>$${parseFloat(product.priceUnit).toFixed(2)}</td>
+                            <td>$${productTotal.toFixed(2)}</td>
+                        </tr>
+                    `;
+                });
+
+                productRows += '</tbody></table>';
+                productsTable.innerHTML = productRows;
+
+                orderDiv.appendChild(productsTable);
+                orderListContainer.appendChild(orderDiv);
+            });
+        }
+
+        function removeOrder(index) {
+            if (confirm('¿Estás seguro de que deseas eliminar este pedido?')) {
+                orders.splice(index, 1);
+                localStorage.setItem('orders', JSON.stringify(orders));
+                renderOrders();
+            }
+        }
+
+        renderOrders();
+    </script>
+</body>
+</html>

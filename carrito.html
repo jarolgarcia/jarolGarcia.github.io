@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito de Compras - Tienda INOVA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        header {
+            background-color: #ff5722;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+        .container {
+            margin: 2rem auto;
+            padding: 1rem;
+            max-width: 800px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .cart-item img {
+            max-width: 80px;
+            border-radius: 8px;
+        }
+        .cart-item-info {
+            flex: 1;
+            margin-left: 1rem;
+        }
+        .cart-item-quantity {
+            display: flex;
+            align-items: center;
+        }
+        .cart-item-quantity button {
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            padding: 0.3rem 0.6rem;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .cart-item-quantity button:hover {
+            background-color: #e64a19;
+        }
+        .cart-item-quantity span {
+            margin: 0 1rem;
+            font-size: 1rem;
+        }
+        .cart-total {
+            margin-top: 2rem;
+            text-align: right;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .checkout-button {
+            display: block;
+            margin-top: 1rem;
+            background-color: #4caf50;
+            color: white;
+            text-align: center;
+            padding: 0.6rem 1.2rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .checkout-button:hover {
+            background-color: #388e3c;
+        }
+        .empty-cart {
+            text-align: center;
+            color: #777;
+            font-size: 1.2rem;
+            margin-top: 2rem;
+        }
+        .client-info {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .client-info label {
+            font-size: 1rem;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .client-info input {
+            width: 100%;
+            padding: 0.6rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <header>Carrito de Compras - Tienda INOVA</header>
+    <div class="container">
+        <div id="cart-items">
+            <!-- Los productos del carrito se cargarán aquí -->
+        </div>
+        <div class="cart-total" id="cart-total">
+            Total: $0.00
+        </div>
+
+        <div class="client-info">
+            <h3>Ingresa tus datos para completar el pedido</h3>
+            <label for="client-first-name">Nombre:</label>
+            <input type="text" id="client-first-name" placeholder="Ingresa tu nombre" required>
+
+            <label for="client-last-name">Apellido:</label>
+            <input type="text" id="client-last-name" placeholder="Ingresa tu apellido" required>
+
+            <label for="client-phone">Teléfono:</label>
+            <input type="text" id="client-phone" placeholder="Ingresa tu número de teléfono" required>
+
+            <label for="client-email">Correo:</label>
+            <input type="email" id="client-email" placeholder="Ingresa tu correo" required>
+
+            <label for="client-address">Dirección:</label>
+            <input type="text" id="client-address" placeholder="Ingresa tu dirección" required>
+        </div>
+
+        <a href="#" class="checkout-button" id="checkout-button" onclick="generateReceipt()">Realizar Pedido</a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script>
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+        function renderCart() {
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartTotalContainer = document.getElementById('cart-total');
+            cartItemsContainer.innerHTML = '';
+            let total = 0;
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="empty-cart">Tu carrito está vacío.</p>';
+                cartTotalContainer.textContent = 'Total: $0.00';
+                return;
+            }
+
+            cart.forEach((product, index) => {
+                const productPrice = parseFloat(product.price) || 0;
+                const itemTotal = productPrice * product.quantity;
+                total += itemTotal;
+
+                const productImage = product.image || 'default-image.jpg';
+
+                const cartItem = document.createElement('div');
+                cartItem.classList.add('cart-item');
+                cartItem.innerHTML = `
+                    <img src="${productImage}" alt="${product.name}">
+                    <div class="cart-item-info">
+                        <h3>${product.name}</h3>
+                        <p>Color: ${product.selectedColor}</p>
+                        <p>Talla: ${product.selectedSize}</p>
+                        <p>Precio: $${productPrice.toFixed(2)}</p>
+                        <p>Total: $${itemTotal.toFixed(2)}</p>
+                    </div>
+                    <div class="cart-item-quantity">
+                        <button onclick="updateQuantity(${index}, -1)">-</button>
+                        <span>${product.quantity}</span>
+                        <button onclick="updateQuantity(${index}, 1)">+</button>
+                    </div>
+                    <button onclick="removeFromCart(${index})" style="margin-left: 10px;">Eliminar</button>
+                `;
+                cartItemsContainer.appendChild(cartItem);
+            });
+
+            cartTotalContainer.textContent = `Total: $${total.toFixed(2)}`;
+        }
+
+        function updateQuantity(index, change) {
+            cart[index].quantity += change;
+            if (cart[index].quantity <= 0) {
+                cart.splice(index, 1);
+            }
+            saveCart();
+            renderCart();
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            saveCart();
+            renderCart();
+        }
+
+        function saveCart() {
+            localStorage.setItem('cart', JSON.stringify(cart));
+        }
+
+        async function generateReceipt() {
+            if (cart.length === 0) {
+                alert("Tu carrito está vacío.");
+                return;
+            }
+
+            const clientFirstName = document.getElementById("client-first-name").value;
+            const clientLastName = document.getElementById("client-last-name").value;
+            const clientPhone = document.getElementById("client-phone").value;
+            const clientEmail = document.getElementById("client-email").value;
+            const clientAddress = document.getElementById("client-address").value;
+
+            if (!clientFirstName || !clientLastName || !clientPhone || !clientEmail || !clientAddress) {
+                alert("Por favor, ingresa todos tus datos.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const message = "Gracias por su compra"; // Mensaje editable
+
+            doc.setFontSize(18);
+            doc.text("Recibo de Compra - Tienda INOVA", 10, 10);
+            doc.setFontSize(12);
+            doc.text(`Cliente: ${clientFirstName} ${clientLastName}`, 10, 20);
+            doc.text(`Teléfono: ${clientPhone}`, 10, 30);
+            doc.text(`Correo: ${clientEmail}`, 10, 40);
+            doc.text(`Dirección: ${clientAddress}`, 10, 50);
+
+            let y = 60;
+            cart.forEach(product => {
+                doc.text(`${product.name} - Cantidad: ${product.quantity} - Total: $${(product.price * product.quantity).toFixed(2)}`, 10, y);
+                y += 10;
+            });
+
+            const total = cart.reduce((sum, product) => sum + (product.price * product.quantity), 0);
+            doc.text(`Total: $${total.toFixed(2)}`, 10, y + 10);
+            doc.text(message, 10, y + 20);
+
+            doc.save(`Recibo-${clientFirstName}-${clientLastName}.pdf`);
+
+            localStorage.removeItem('cart');
+            renderCart();
+            alert("Pedido realizado con éxito. Se ha generado un recibo en PDF.");
+        }
+
+        renderCart();
+    </script>
+</body>
+</html>
